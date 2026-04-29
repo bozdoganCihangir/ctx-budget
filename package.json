@@ -1,6 +1,6 @@
 {
   "name": "ctx-budget",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tokenizer-aware chat-history fitter. Trims, windows, or summarizes old messages so your conversation fits the model's context budget — with a full audit log of every kept, dropped, and summarized message.",
   "keywords": [
     "llm",
