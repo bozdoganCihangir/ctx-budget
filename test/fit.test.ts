@@ -150,6 +150,29 @@ describe('fit() — head-tail', () => {
     });
     expect(r.messages.map((m) => m.content)).toEqual(['a', 'b', 'c']);
   });
+
+  it('skips oversized oldest when filling head slot', async () => {
+    // The oldest message can't fit anywhere, so the head slot should advance to the
+    // next candidate rather than burning the slot on the doomed message.
+    const msgs: ChatMessage[] = [
+      mk('user', 'X'.repeat(500)),
+      mk('user', 'a'),
+      mk('user', 'b'),
+      mk('user', 'c'),
+    ];
+    const r = await fit(msgs, {
+      maxTokens: 10,
+      countTokens: len,
+      perMessageOverhead: 0,
+      strategy: 'head-tail',
+      keep: { head: 1, tail: 1 },
+    });
+    // 'X…' dropped (over-budget); 'a' fills head, 'c' fills tail.
+    expect(r.messages.map((m) => m.content)).toEqual(['a', 'c']);
+    const droppedContents = r.dropped.map((d) => d.message.content);
+    expect(droppedContents).toContain('X'.repeat(500));
+    expect(droppedContents).toContain('b');
+  });
 });
 
 describe('fit() — sliding-window', () => {
@@ -259,6 +282,38 @@ describe('fit() — summarize', () => {
       summarize: async (ms) => `summary of ${ms.length}`,
     });
     expect(r.summary?.content).toContain('summary of 2');
+  });
+
+  it('tags second-pass evictions as over-budget when summary exceeds reserve', async () => {
+    // First pass keeps 'recent2' (7 ≤ firstPassBudget=8); old1/old2/recent1 are dropped
+    // and summarized. The summary text is 100 chars which blows summaryReserve=10, so
+    // recent2 is evicted in the second pass — and tagged 'over-budget' because it isn't
+    // in the summary text.
+    const msgs: ChatMessage[] = [
+      mk('user', 'old1'),
+      mk('user', 'old2'),
+      mk('user', 'recent1'),
+      mk('user', 'recent2'),
+    ];
+    let received: ChatMessage[] = [];
+    const r = await fit(msgs, {
+      maxTokens: 18,
+      countTokens: len,
+      perMessageOverhead: 0,
+      summaryReserve: 10,
+      strategy: 'summarize',
+      summaryPrefix: '',
+      summarize: (ms) => {
+        received = ms;
+        return 'S'.repeat(100);
+      },
+    });
+    expect(received.map((m) => m.content)).toEqual(['old1', 'old2', 'recent1']);
+    const reasons = Object.fromEntries(r.dropped.map((d) => [d.message.content, d.reason]));
+    expect(reasons.old1).toBe('summarized');
+    expect(reasons.old2).toBe('summarized');
+    expect(reasons.recent1).toBe('summarized');
+    expect(reasons.recent2).toBe('over-budget');
   });
 });
 

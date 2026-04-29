@@ -36,6 +36,12 @@ function parseInput(raw: string): ChatMessage[] {
   return out;
 }
 
+function parseNum(v: unknown, fallback: number): number {
+  if (v === undefined || v === null || v === '') return fallback;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function shortContent(c: string | null, max = 60): string {
   const s = c ?? '';
   if (s.length <= max) return s.replace(/\n/g, ' ');
@@ -114,14 +120,14 @@ cli
 
       const fitOpts: FitOptions = {
         maxTokens: max,
-        reserveForResponse: Number(opts.reserve) || 0,
+        reserveForResponse: parseNum(opts.reserve, 0),
         strategy,
-        perMessageOverhead: Number(opts.perMessage) || 4,
+        perMessageOverhead: parseNum(opts.perMessage, 4),
         keep: {
-          head: Number(opts.head) || 1,
-          ...(opts.tail !== undefined ? { tail: Number(opts.tail) } : {}),
+          head: parseNum(opts.head, 1),
+          ...(opts.tail !== undefined ? { tail: parseNum(opts.tail, 0) } : {}),
         },
-        windowSize: Number(opts.window) || 10,
+        windowSize: parseNum(opts.window, 10),
       };
 
       const result = await fit(input, fitOpts);

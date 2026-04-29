@@ -15,14 +15,9 @@ export interface StrategySelection {
   keep: Set<number>;
   /** Group indices to drop, with reason. */
   drops: Map<number, DropReason>;
-  /** For `summarize`: synthesized summary message and where it should be inserted. */
+  /** For `summarize`: synthesized summary message. Engine inserts it before the first
+   * non-sticky kept group (so leading system messages stay first). */
   summary?: ChatMessage;
-  /**
-   * For `summarize`: insertion point in the kept-group order.
-   * Summary is spliced after the last sticky group whose original index is <= this point,
-   * which keeps system messages first.
-   */
-  summaryAfterGroupIndex?: number;
 }
 
 export interface Strategy {

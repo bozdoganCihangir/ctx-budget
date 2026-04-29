@@ -27,24 +27,26 @@ export const headTail: Strategy = {
 
     let remaining = ctx.budget - stickyTokens;
 
-    // Head: oldest non-sticky.
+    // Head: oldest non-sticky. Skip past non-fitting candidates so a too-large oldest
+    // message doesn't burn the head slot — keep walking until `head` are kept.
     let headTaken = 0;
-    for (const i of nonStickyIdx) {
+    let headEnd = 0;
+    for (let k = 0; k < nonStickyIdx.length; k++) {
       if (headTaken >= head) break;
+      const i = nonStickyIdx[k] as number;
       const t = tokens[i] as number;
       if (t <= remaining) {
         keep.add(i);
         remaining -= t;
         headTaken++;
       } else {
-        // Mark as over-budget; keep trying further head slots in case a tiny one fits.
         drops.set(i, 'over-budget');
-        headTaken++;
       }
+      headEnd = k + 1;
     }
 
-    // Tail candidates: non-sticky after the head slots.
-    const tailCandidates = nonStickyIdx.slice(headTaken);
+    // Tail candidates: non-sticky after the consumed head positions.
+    const tailCandidates = nonStickyIdx.slice(headEnd);
     let tailKept = 0;
     for (let k = tailCandidates.length - 1; k >= 0; k--) {
       const i = tailCandidates[k] as number;

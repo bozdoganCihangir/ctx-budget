@@ -74,24 +74,17 @@ export const summarize: Strategy = {
 
     if (usedAfterSummary > ctx.budget) {
       let over = usedAfterSummary - ctx.budget;
-      // Evict the kept non-sticky from oldest.
+      // Evict the kept non-sticky from oldest. These are NOT in the summary text — the
+      // summarizer already ran on the first-pass set — so tag them 'over-budget'.
       for (const i of analysis.nonStickyIdx) {
         if (over <= 0) break;
         if (!keep.has(i)) continue;
         keep.delete(i);
-        drops.set(i, 'summarized');
+        drops.set(i, 'over-budget');
         over -= analysis.tokens[i] as number;
       }
     }
 
-    // Insertion point: after the last sticky group whose original group index sits at
-    // the head of the kept set. We use -1 to mean "before everything else", which the
-    // engine interprets as right after any leading sticky run.
-    return {
-      keep,
-      drops,
-      summary: summaryMsg,
-      summaryAfterGroupIndex: -1,
-    };
+    return { keep, drops, summary: summaryMsg };
   },
 };
