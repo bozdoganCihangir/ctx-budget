@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  pack-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Verify packed size
+        run: |
+          set -euo pipefail
+          npm pack --json > pack.json
+          unpacked=$(node -e "console.log(JSON.parse(require('fs').readFileSync('pack.json','utf8'))[0].unpackedSize)")
+          packed=$(node -e "console.log(JSON.parse(require('fs').readFileSync('pack.json','utf8'))[0].size)")
+          echo "Packed:   ${packed} bytes"
+          echo "Unpacked: ${unpacked} bytes"
+          if [ "$packed" -gt 60000 ]; then
+            echo "::error::Packed tarball exceeds 60KB ($packed)"
+            exit 1
+          fi

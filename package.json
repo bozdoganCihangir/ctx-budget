@@ -1,0 +1,67 @@
+{
+  "name": "ctx-budget",
+  "version": "0.1.0",
+  "description": "Tokenizer-aware chat-history fitter. Trims, windows, or summarizes old messages so your conversation fits the model's context budget — with a full audit log of every kept, dropped, and summarized message.",
+  "keywords": [
+    "llm",
+    "chat",
+    "context",
+    "context-window",
+    "tokenizer",
+    "tokens",
+    "memory",
+    "openai",
+    "anthropic",
+    "gpt",
+    "claude",
+    "ai",
+    "summarize",
+    "trim"
+  ],
+  "license": "MIT",
+  "author": "Cihangir Bozdogan",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "bin": {
+    "ctx-budget": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome check src test",
+    "format": "biome format --write src test",
+    "bench": "tsx scripts/bench.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "cac": "^6.7.14",
+    "picocolors": "^1.1.1",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
