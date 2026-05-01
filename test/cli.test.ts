@@ -20,9 +20,13 @@ afterAll(() => {
 
 function run(args: string[], stdin?: string): { stdout: string; stderr: string; code: number } {
   // spawnSync captures stdout + stderr on both success and failure paths.
+  // NO_COLOR=1 disables picocolors so ANSI escapes don't show up in assertions
+  // (picocolors auto-enables colors when CI=true, which would otherwise break
+  // regex matches like /\+ / that expect a literal '+ ' contiguously).
   const r = spawnSync('node', [DIST, ...args], {
     input: stdin,
     encoding: 'utf8',
+    env: { ...process.env, NO_COLOR: '1' },
   });
   return { stdout: r.stdout ?? '', stderr: r.stderr ?? '', code: r.status ?? 1 };
 }
