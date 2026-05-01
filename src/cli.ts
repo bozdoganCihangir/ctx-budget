@@ -2,10 +2,9 @@ import { readFileSync } from 'node:fs';
 import { stdin, stdout } from 'node:process';
 import cac from 'cac';
 import pc from 'picocolors';
+import { version as VERSION } from '../package.json';
 import { fit } from './index.js';
 import type { ChatMessage, FitOptions, FitResult, Strategy } from './types.js';
-
-const VERSION = '0.1.0';
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];

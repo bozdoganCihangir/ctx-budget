@@ -1,8 +1,9 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { version as PKG_VERSION } from '../package.json';
 
 const ROOT = join(__dirname, '..');
 let DIST: string;
@@ -18,21 +19,12 @@ afterAll(() => {
 });
 
 function run(args: string[], stdin?: string): { stdout: string; stderr: string; code: number } {
-  try {
-    const stdout = execFileSync('node', [DIST, ...args], {
-      input: stdin,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    return { stdout, stderr: '', code: 0 };
-  } catch (err) {
-    const e = err as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number };
-    return {
-      stdout: typeof e.stdout === 'string' ? e.stdout : (e.stdout?.toString('utf8') ?? ''),
-      stderr: typeof e.stderr === 'string' ? e.stderr : (e.stderr?.toString('utf8') ?? ''),
-      code: e.status ?? 1,
-    };
-  }
+  // spawnSync captures stdout + stderr on both success and failure paths.
+  const r = spawnSync('node', [DIST, ...args], {
+    input: stdin,
+    encoding: 'utf8',
+  });
+  return { stdout: r.stdout ?? '', stderr: r.stderr ?? '', code: r.status ?? 1 };
 }
 
 describe('CLI', () => {
@@ -53,10 +45,10 @@ describe('CLI', () => {
     writeFileSync(chatFile, messages.map((m) => JSON.stringify(m)).join('\n'));
   });
 
-  it('prints version', () => {
+  it('prints version matching package.json', () => {
     const r = run(['--version']);
     expect(r.code).toBe(0);
-    expect(r.stdout).toMatch(/0\.1\.0/);
+    expect(r.stdout).toContain(`ctx-budget/${PKG_VERSION}`);
   });
 
   it('errors when --max is missing', () => {
@@ -104,6 +96,22 @@ describe('CLI', () => {
     const r = run([chatFile, '--max', '10000', '--strategy', 'summarize']);
     expect(r.code).not.toBe(0);
     expect(r.stderr).toMatch(/summarize/);
+  });
+
+  it('rejects an unknown strategy', () => {
+    const r = run([chatFile, '--max', '10000', '--strategy', 'bogus']);
+    expect(r.code).not.toBe(0);
+    expect(r.stderr).toMatch(/bogus/i);
+  });
+
+  it('renders --diff with kept and dropped markers', () => {
+    const r = run([chatFile, '--max', '20', '--strategy', 'drop-oldest', '--diff']);
+    expect(r.code).toBe(0);
+    // Diff lines start with '+' for kept and '−' (U+2212) for dropped.
+    expect(r.stdout).toMatch(/\+ /);
+    expect(r.stdout).toMatch(/− /);
+    // Summary line goes to stderr.
+    expect(r.stderr).toMatch(/drop-oldest/);
   });
 
   it('honors --per-message 0 instead of snapping to default', () => {

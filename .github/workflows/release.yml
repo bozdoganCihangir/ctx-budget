@@ -29,6 +29,15 @@ jobs:
             echo "::error::Tag v$tag does not match package.json version $pkg"
             exit 1
           fi
+      - name: Verify built CLI reports the package version
+        run: |
+          set -euo pipefail
+          pkg=$(node -p "require('./package.json').version")
+          cli=$(node dist/cli.js --version)
+          if [[ "$cli" != *"$pkg"* ]]; then
+            echo "::error::Built CLI reports '$cli', expected to contain '$pkg'"
+            exit 1
+          fi
       - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

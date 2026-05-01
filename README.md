@@ -278,7 +278,7 @@ const result = await fit(messages, {
 
 ### Budgeting the summary itself
 
-The summary message also costs tokens. Before deciding what to drop, the strategy reserves `summaryReserve` tokens (default 200). After your callback returns, if the actual summary exceeds the reserve, the strategy evicts more messages from the kept set (also tagged `summarized`) until the result fits.
+The summary message also costs tokens. Before deciding what to drop, the strategy reserves `summaryReserve` tokens (default 200). After your callback returns, if the actual summary exceeds the reserve, the strategy evicts more messages from the kept set (tagged `over-budget`, since these later evictions are **not** in the summary text — only the first-pass drops were summarized) until the result fits.
 
 If your summarizer tends to return long output, raise `summaryReserve`:
 
